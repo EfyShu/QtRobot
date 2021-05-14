@@ -48,7 +48,7 @@ public class Application {
     private static void init(){
         BeanMap.loadBeans("com.efy");
         Console console = Console.getInstance(640,480);
-        console.initComponents("火币机器人",defaultMenu,items, JFrame.EXIT_ON_CLOSE);
+        console.initComponents("量化机器人",defaultMenu,items, JFrame.EXIT_ON_CLOSE);
     }
 
 
