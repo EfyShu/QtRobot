@@ -19,6 +19,6 @@ public class CancelAllDto {
     private Integer failedCount;
     @JSONField(name = "next-id")
     @ApiModelProperty("下一个可以撤销的订单号，返回-1表示没有可以撤销的订单")
-    private Integer nextId;
+    private Long nextId;
 
 }

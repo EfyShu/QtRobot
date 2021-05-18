@@ -30,11 +30,11 @@ public class MatchedOrderParam implements RequestParam {
     @ApiModelProperty(value = "查询结束日期（新加坡时区）")
     private String endDate;
     @ApiModelProperty(value = "查询起始 ID")
-    private Integer from;
+    private Long from;
     @ApiModelProperty(value = "查询方向prev 向前,next 向后")
     private String direct;
     @ApiModelProperty(value = "查询记录大小",allowableValues = "[1,500]")
-    private String size;
+    private Integer size = 500;
 
     public void setDirect(String direct) {
         this.direct = direct;

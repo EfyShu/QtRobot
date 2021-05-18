@@ -49,7 +49,7 @@ public class RestUtil {
             .build();
 
 
-    public static String execute(Request request){
+    public static String execute(Request request) throws IOException {
         Response response = null;
         try {
             String responseBody;
@@ -63,11 +63,10 @@ public class RestUtil {
             SystemMenu.printDebug("调用结果:"+responseBody);
             return responseBody;
         } catch (IOException e) {
-            e.printStackTrace();
+            throw e;
         } finally {
             response.close();
         }
-        return null;
     }
 
     public static <T> Result<T> get(String apiUrl, String accessKey,String secretKey,UrlParams params,Class responseType){
@@ -80,7 +79,13 @@ public class RestUtil {
                 .addHeader("accept-language", "zh-CN,zh;q=0.9")
                 .addHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36")
                 .build();
-        String responseBody = execute(executeRequest);
+
+        String responseBody;
+        try {
+            responseBody = execute(executeRequest);
+        } catch (Exception e) {
+            return Result.fail("连接失败.请检查网络" + e.getMessage());
+        }
         return assemblyResponse(responseBody,responseType);
     }
 
@@ -95,7 +100,12 @@ public class RestUtil {
                 .addHeader("accept-language", "zh-CN,zh;q=0.9")
                 .addHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36")
                 .build();
-        String responseBody = execute(executeRequest);
+        String responseBody;
+        try {
+            responseBody = execute(executeRequest);
+        } catch (Exception e) {
+            return Result.fail("连接失败.请检查网络" + e.getMessage());
+        }
         return assemblyResponse(responseBody,responseType);
     }
 

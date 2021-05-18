@@ -17,7 +17,10 @@ import java.util.Map;
  */
 public class RuleEngine {
     public static RuleEngine ins;
-
+    /**评分卡模式(false - 规则树<必须一竿子捅到底,否则都算失败>,true - 评分卡<计算所有已经被命中的规则的分数>)**/
+    private boolean cardMode = false;
+    /**简单模式(配合评分卡使用,true - 非全量遍历, false - 全量遍历)**/
+    private boolean simpleMode = true;
     private RuleEngine(){}
 
     public static RuleEngine getIns() {
@@ -26,9 +29,6 @@ public class RuleEngine {
         }
         return ins;
     }
-
-    /**是否简单模式(true-命中任意规则返回,false-命中继续遍历)*/
-    private boolean simpleMode = false;
 
     /**
      * 比对方法
@@ -87,11 +87,10 @@ public class RuleEngine {
             BigDecimal sourceNumber = new BigDecimal(source+"");
             return sourceNumber;
         }catch (Exception e){
-            throw e;
-//            System.err.println("数据内容:"+source+"|字符转换时发生异常!"+e.getMessage());
-//            e.printStackTrace();
+//            throw e;
+            System.err.println("数据内容:"+source+"|字符转换时发生异常!"+e.getMessage());
         }
-//        return null;
+        return null;
     }
 
     /**
@@ -127,55 +126,68 @@ public class RuleEngine {
 
     /**
      * 批卷算法(正确时打上标记,并进入该分支下一规则)
-     * (递归算法实现,超过50层时建议优化)
      * @param ruleTree
      */
-    private void marking(List<RuleDTO> ruleTree){
+    private boolean marking(List<RuleDTO> ruleTree){
+        boolean result = false;
         for(RuleDTO dto : ruleTree){
-            boolean result;
             result = compair(dto.getSourceValue(),dto.getTargetValue(),dto.getOperator());
-            dto.setResult(result);
-            if(result && simpleMode){
-                break;
-            }
-            //成功则进入子项比较
-            if(result && (dto.getChildren() != null && !dto.getChildren().isEmpty())) {
-                marking(dto.getChildren());
+            //评分卡模式
+            if(cardMode && dto.getChildren() != null && !dto.getChildren().isEmpty()){
+                dto.setResult(result);
+                if(simpleMode){
+                    if(result){  //简单模式下,结果正确则中断其他支线
+                        marking(dto.getChildren());
+                        return dto.getResult();
+                    }else{       //否则继续校验其他支线
+                        continue;
+                    }
+                }else{           //非简单模式下,无论结果如何都需要继续遍历
+                    marking(dto.getChildren());
+                }
+            }else if(!cardMode && result && dto.getChildren() != null && !dto.getChildren().isEmpty()){
+                //规则树模式父级结果由子级决定
+                dto.setResult(marking(dto.getChildren()));
                 //其中一条成功则代表其他支线不再有效
-                break;
+                return dto.getResult();
+            }else {
+                dto.setResult(result);
             }
         }
+        return result;
     }
 
     /**
      * 计算得分
-     * (递归算法实现,超过50层时建议优化)
      * @param ruleTree
      * @return
      */
     private ResultDTO sumScore(ResultDTO result, List<RuleDTO> ruleTree){
-        if(ruleTree == null) {
+        if(ruleTree == null || ruleTree.isEmpty()) {
             return result;
         }
         for(RuleDTO temp : ruleTree){
-            if(!temp.getResult()) {
+            if(!cardMode && !temp.getResult()) {
                 continue;
             }
-            double score = result.getScore() + temp.getScore();
-            result.setScore(score);
-            result.getDetails().add(print(temp));
-            //任意一条原子规则命中,则总体结果为命中
+
             if(temp.getResult()){
+                double score = result.getScore() + temp.getScore();
+                result.setScore(score);
+                result.getDetails().add(print(temp));
                 result.setHitCount(result.getHitCount()+1);
-                result.setResult(true);
-            }
-            //如果没有子规则,则直接中断计算
-            if(temp.getChildren() == null || temp.getChildren().isEmpty()) {
+                result.setResult(temp.getResult());
+                result = sumScore(result,temp.getChildren());
+                //其中一条成功则代表其他支线不再有效
                 break;
             }
-            result = sumScore(result,temp.getChildren());
-            //其中一条成功则代表其他支线不再有效
-            break;
+            if(cardMode){    //评分卡模式需要继续遍历分数
+                result = sumScore(result,temp.getChildren());
+                if(temp.getResult()){
+                    //其中一条成功则代表其他支线不再有效
+                    break;
+                }
+            }
         }
         return result;
     }
@@ -218,5 +230,10 @@ public class RuleEngine {
                 temp.getRuleName(),
                 temp.getScore());
         return detail;
+    }
+
+    public void setCardMode(boolean cardMode,boolean simpleMode) {
+        this.cardMode = cardMode;
+        this.simpleMode = !cardMode || simpleMode;
     }
 }

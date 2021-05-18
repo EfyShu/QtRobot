@@ -2,6 +2,7 @@ package com.efy.constant;
 
 import com.efy.function.dto.account.AccountDto;
 import com.efy.function.dto.market.TickersDto;
+import com.efy.function.dto.order.OrderDto;
 
 import java.util.List;
 import java.util.Map;
@@ -25,13 +26,13 @@ public class DataMarket {
     /**涨幅榜(key-symbol,value-日涨幅<24小时滚动价>)**/
     public static List<Map<String,String>> WINGS = new CopyOnWriteArrayList<>();
 
-    /**现价榜**/
+    /**现价榜(key-symbol,value-聚合行情)**/
     public static Map<String, TickersDto> TICKERS = new ConcurrentHashMap<>();
 
-    /**订单列表及状态**/
-    public static Map<String,String> ORDERS = new ConcurrentHashMap<>();
+    /**订单列表(key-orderId,value-订单信息)**/
+    public static Map<Long, OrderDto> ORDERS = new ConcurrentHashMap<>();
 
     /**订单查询分页缓存(记录分页所需参数,如key->open-prev,value->上一次查询结果中得到的第一条id)**/
-    public static Map<String,Integer> ORDER_PAGE = new ConcurrentHashMap<>();
+    public static Map<String,Long> ORDER_PAGE = new ConcurrentHashMap<>();
 
 }

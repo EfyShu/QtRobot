@@ -14,5 +14,5 @@ import lombok.Data;
 public class QueryParam implements RequestParam {
     @JSONField(name = "order-id")
     @ApiModelProperty(value = "订单ID，填在path中",required = true)
-    private String orderId;
+    private Long orderId;
 }

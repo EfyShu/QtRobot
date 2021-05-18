@@ -53,15 +53,25 @@ public class Order {
         if(!"ok".equals(result)){
             JOptionPane.showMessageDialog(Console.getInstance().getConsole(),result.getMessage());
             System.err.println("设置超时取消时间失败");
+        }else{
+            System.out.println("设置成功");
         }
+
         return result;
     }
 
     @Module(value = "现货下单",tags = {"订单类"})
-    public Result<String> place(PlaceParam param){
-        Result<String> result = RestUtil.post(PLACE, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),String.class);
+    public Result<Long> place(PlaceParam param){
+        Result<Long> result = RestUtil.post(PLACE, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),Long.class);
         if(result.getData() != null){
-            DataMarket.ORDERS.put(result.getData(), OrderEnum.ORDER_STATE_CREATED.code);
+            OrderDto dto = new OrderDto();
+            dto.setSymbol(param.getSymbol());
+            dto.setPrice(param.getPrice());
+            dto.setFilledAmount(param.getAmount());
+            dto.setSource(param.getSource());
+            dto.setType(param.getType());
+            dto.setState(OrderEnum.ORDER_STATE_CREATED.code);
+            DataMarket.ORDERS.put(result.getData(), dto);
         }
         return result;
     }
@@ -70,8 +80,13 @@ public class Order {
     public Result<List<OpenOrderDto>> queryOpen(OpenOrderParam param){
         Result<List<OpenOrderDto>> result = RestUtil.post(PLACE, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),OpenOrderDto.class);
         if("ok".equals(result.getStatus()) && result.getData() != null){
-            DataMarket.ORDER_PAGE.put("open-prev",result.getData().get(0).getId());
-            DataMarket.ORDER_PAGE.put("open-next",result.getData().get(0).getId());
+            if(result.getData().size() > 0){
+                DataMarket.ORDER_PAGE.put("open-prev",result.getData().get(0).getId());
+                DataMarket.ORDER_PAGE.put("open-next",result.getData().get(0).getId());
+                for(OpenOrderDto dto : result.getData()){
+                    DataMarket.ORDERS.put(dto.getOrderId(),dto);
+                }
+            }
             if(result.getData().size() > 1){
                 DataMarket.ORDER_PAGE.put("open-next",result.getData().get(result.getData().size()-1).getId());
             }
@@ -83,8 +98,13 @@ public class Order {
     public Result<List<MatchedOrderDto>> queryMatched(MatchedOrderParam param){
         Result<List<MatchedOrderDto>> result = RestUtil.post(PLACE, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),MatchedOrderDto.class);
         if("ok".equals(result.getStatus()) && result.getData() != null){
-            DataMarket.ORDER_PAGE.put("matched-prev",result.getData().get(0).getId());
-            DataMarket.ORDER_PAGE.put("matched-next",result.getData().get(0).getId());
+            if(result.getData().size() > 0){
+                DataMarket.ORDER_PAGE.put("matched-prev",result.getData().get(0).getId());
+                DataMarket.ORDER_PAGE.put("matched-next",result.getData().get(0).getId());
+                for(MatchedOrderDto dto : result.getData()){
+                    DataMarket.ORDERS.remove(dto.getOrderId());
+                }
+            }
             if(result.getData().size() > 1){
                 DataMarket.ORDER_PAGE.put("matched-next",result.getData().get(result.getData().size()-1).getId());
             }
@@ -113,10 +133,11 @@ public class Order {
             if(result.getData().getFailed() != null){
                 //更新订单状态
                 for(BatchCancelFailedDto failDto : result.getData().getFailed()){
-                    String currState = DataMarket.ORDERS.get(failDto.getOrderId());
+                    OrderDto currOrder = DataMarket.ORDERS.get(failDto.getOrderId());
                     String resultState = failDto.getOrderState();
-                    String orderState =explainState(resultState,currState);
-                    DataMarket.ORDERS.put(failDto.getOrderId(),orderState);
+                    String orderState = explainState(resultState,currOrder.getState());
+                    currOrder.setState(orderState);
+                    DataMarket.ORDERS.put(failDto.getOrderId(),currOrder);
                 }
             }
         }
@@ -125,13 +146,14 @@ public class Order {
 
     @Module(value = "取消订单",tags = {"订单类"})
     public Result<Integer> cancel(CancelParam param){
-        String realPath = CANCEL.replace("{order-id}",param.getOrderId());
+        String realPath = CANCEL.replace("{order-id}",param.getOrderId().toString());
         Result<Integer> result = RestUtil.post(realPath, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),Integer.class);
         if(!"ok".equals(result.getStatus())){
-            String currState = DataMarket.ORDERS.get(param.getOrderId());
+            OrderDto currOrder = DataMarket.ORDERS.get(param.getOrderId());
             String resultState = result.getData().toString();
-            String orderState =explainState(resultState,currState);
-            DataMarket.ORDERS.put(param.getOrderId(),orderState);
+            String orderState = explainState(resultState,currOrder.getState());
+            currOrder.setState(orderState);
+            DataMarket.ORDERS.put(param.getOrderId(),currOrder);
         }else{
             DataMarket.ORDERS.remove(param.getOrderId());
         }
@@ -140,10 +162,10 @@ public class Order {
 
     @Module(value = "查询订单详情",tags = {"订单类"})
     public Result<QueryDto> query(QueryParam param){
-        String realPath = QUERY.replace("{order-id}",param.getOrderId());
+        String realPath = QUERY.replace("{order-id}",param.getOrderId().toString());
         Result<QueryDto> result = RestUtil.post(realPath, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),QueryDto.class);
         if("ok".equals(result.getStatus())){
-            DataMarket.ORDERS.put(param.getOrderId(),result.getData().getState());
+            DataMarket.ORDERS.put(param.getOrderId(),result.getData());
         }
         return result;
     }

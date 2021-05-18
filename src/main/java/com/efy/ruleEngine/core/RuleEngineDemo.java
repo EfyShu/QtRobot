@@ -16,11 +16,12 @@ public class RuleEngineDemo {
     public static void main(String[] args) throws Exception {
         long start,end;
         RuleEngine engine = RuleEngine.getIns();
+        engine.setCardMode(true,false);
         for(int i=0;i<20;i++){
             start = System.currentTimeMillis();
             RuleBuilder builder = new RuleBuilder();
             builder
-                    .root("balance","钱包余额",Math.random() * 20,">",0,30D,new RuleListener())
+                    .root("balance","钱包余额",Math.random() * 20,">",10,30D,new RuleListener())
                     .and("balance","钱包余额",Math.random() * 25,">=",19,15D,new RuleListener())
                     .and("balance","钱包余额",Math.random() * 100,">=",99,33.3D,new RuleListener())
                     ;

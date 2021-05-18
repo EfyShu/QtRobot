@@ -14,5 +14,5 @@ import lombok.Data;
 public class CancelParam implements RequestParam {
     @JSONField(name = "order-id")
     @ApiModelProperty(value = "订单编号",required = true)
-    private String orderId;
+    private Long orderId;
 }
