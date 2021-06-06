@@ -27,7 +27,7 @@ public class DataMarket {
     public static List<Map<String,String>> WINGS = new CopyOnWriteArrayList<>();
 
     /**本轮涨跌幅(key-symbol,value-本轮涨跌幅)**/
-    public static Map<String,Double> CURRENT_WINGS = new ConcurrentHashMap<>();
+    public static Map<String,String> CURRENT_WINGS = new ConcurrentHashMap<>();
 
     /**现价榜(key-symbol,value-聚合行情)**/
     public static Map<String, TickersDto> TICKERS = new ConcurrentHashMap<>();
@@ -39,6 +39,6 @@ public class DataMarket {
     public static Map<String,Long> ORDER_PAGE = new ConcurrentHashMap<>();
 
     /**当前可用余额**/
-    public static Integer TRADE_BALANCE;
+    public static Double TRADE_BALANCE;
 
 }

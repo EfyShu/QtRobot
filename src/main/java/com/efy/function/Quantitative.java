@@ -7,21 +7,25 @@ import com.efy.frame.Console;
 import com.efy.function.dto.Result;
 import com.efy.function.dto.account.AccountDto;
 import com.efy.function.dto.account.WalletDto;
+import com.efy.function.dto.order.OpenOrderDto;
 import com.efy.function.dto.order.OrderDto;
 import com.efy.function.enums.AccountEnum;
+import com.efy.function.enums.OrderEnum;
 import com.efy.function.param.account.AssetParam;
 import com.efy.function.param.account.BalanceParam;
 import com.efy.function.param.market.TickersParam;
-import com.efy.function.param.order.BatchCancelParam;
-import com.efy.function.param.order.CancelAllParam;
-import com.efy.function.param.order.MatchedOrderParam;
-import com.efy.function.proxy.*;
+import com.efy.function.param.order.*;
+import com.efy.function.proxy.IAccount;
+import com.efy.function.proxy.IMarket;
+import com.efy.function.proxy.IOrder;
+import com.efy.function.proxy.IQuantitative;
 import com.efy.listener.func.IQuantitativeListener;
 import com.efy.listener.func.impl.TradeListener;
 import com.efy.listener.sys.BeanMap;
 
 import javax.swing.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -125,8 +129,8 @@ public class Quantitative implements IQuantitative {
                     Result result = market.tickers(param);
                     if(!"ok".equals(result.getStatus())) continue;
                     printWings();
-//                    doBuy();
-//                    doSell();
+                    doBuy();
+                    doSell();
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -166,39 +170,50 @@ public class Quantitative implements IQuantitative {
      */
     private void doSellAll(){
         IOrder order = BeanMap.getBean(Order.class);
-        //取消所有订单
-        CancelAllParam cancelAllParam = new CancelAllParam();
-        //现货账户ID
-        cancelAllParam.setAccountId(DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getId());
-        order.cancelAll(cancelAllParam);
+        IAccount account = BeanMap.getBean(Account.class);
+        if(!DataMarket.ORDERS.isEmpty()){
+            //取消所有订单
+            List<OpenOrderDto> orders = order.queryOpen(new OpenOrderParam()).getData();
+            BatchCancelParam batchCancelParam = new BatchCancelParam();
+            batchCancelParam.setOrderIds(DataMarket.ORDERS.keySet().toArray(new String[]{}));
+            order.batchCancel(batchCancelParam);
+            for(Map.Entry<String,String> entry : DataMarket.CURRENT_WINGS.entrySet()){
+                CancelAllParam cancelAllParam = new CancelAllParam();
+                cancelAllParam.setSymbol(entry.getKey());
+                order.cancelAll(cancelAllParam);
+            }
+        }
         //卖出现有货币转为USDT
-        BatchCancelParam batchCancelParam = new BatchCancelParam();
-        batchCancelParam.setOrderIds(DataMarket.ORDERS.keySet().toArray(new String[]{}));
-        order.batchCancel(batchCancelParam);
+        account.balance(new BalanceParam());
+        Map<String,WalletDto> wallets = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet();
+        for(Map.Entry<String,WalletDto> entry : wallets.entrySet()){
+            if(entry.getKey().equals("usdt")) continue;
+            String symbol = entry.getKey()+"usdt";
+            PlaceParam placeParam = new PlaceParam();
+            placeParam.setSymbol(symbol);
+            placeParam.setType(OrderEnum.ORDER_DIRECTION_SELL.code+"-"+OrderEnum.ORDER_OPERATION_MARKET.code);
+            placeParam.setAmount(entry.getValue().getTradeBalance());
+            order.place(placeParam);
+        }
+        account.asset(new AssetParam());
+        System.out.println("转换完成,估值:" + DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getValuation());
     }
 
     private void printWings(){
-        ISystemMenu systemMenu = BeanMap.getBean(SystemMenu.class);
-        systemMenu.clearPanel();
+//        ISystemMenu systemMenu = BeanMap.getBean(SystemMenu.class);
+//        systemMenu.clearPanel();
         //先取最新记录
         Map<String,String> billBoard = DataMarket.WINGS.get(DataMarket.WINGS.size()-1);
-        int countForLine = 4;
-        int count = 0;
         int total = 0;
         for(Map.Entry<String,String> wing : billBoard.entrySet()){
             //只看usdt
             if(!wing.getKey().contains("usdt")) continue;
             if(DataMarket.CURRENT_WINGS.get(wing.getKey()) != null){
-                System.out.print(wing.getKey() + ":" + wing.getValue() + "%("+ DataMarket.CURRENT_WINGS.get(wing.getKey()) +"%)" + "\t");
+                System.out.println(wing.getKey() + ":" + wing.getValue() + "%("+ DataMarket.CURRENT_WINGS.get(wing.getKey()) +"%)" + "\t");
             }else{
-                System.out.print(wing.getKey() + ":" + wing.getValue() + "%\t");
+                System.out.println(wing.getKey() + ":" + wing.getValue() + "%\t");
             }
-            count++;
             total++;
-            if(count == countForLine) {
-                System.out.println();
-                count = 0;
-            }
             if(total >= 10) break;
         }
     }
@@ -232,5 +247,20 @@ public class Quantitative implements IQuantitative {
         }
         setMenuSelected(menu,true);
         return true;
+    }
+
+    @Override
+    public boolean isBalanceFlag() {
+        return balanceFlag;
+    }
+
+    @Override
+    public boolean isOrderFlag() {
+        return orderFlag;
+    }
+
+    @Override
+    public boolean isAutoPlaceFlag() {
+        return autoPlaceFlag;
     }
 }

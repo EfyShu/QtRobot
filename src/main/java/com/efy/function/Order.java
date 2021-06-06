@@ -77,7 +77,7 @@ public class Order implements IOrder {
             DataMarket.ORDERS.put(result.getData(), dto);
             //更新可交易余额
             synchronized (DataMarket.TRADE_BALANCE){
-                DataMarket.TRADE_BALANCE -= Integer.parseInt(param.getAmount());
+                DataMarket.TRADE_BALANCE -= Double.valueOf(param.getAmount());
             }
             String direDesc = param.getType().contains(OrderEnum.ORDER_DIRECTION_BUY.code) ? "买入" : "卖出";
             System.out.println(direDesc+param.getSymbol()+"成功.订单号为:"+result.getData());

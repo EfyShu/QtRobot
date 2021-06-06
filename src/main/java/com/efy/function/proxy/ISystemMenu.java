@@ -9,7 +9,11 @@ package com.efy.function.proxy;
 public interface ISystemMenu {
     void setDebug();
 
+    void setInfo();
+
     void printDebug(String message);
+
+    void printInfo(String message);
 
     void printError(String message);
 

@@ -85,7 +85,7 @@ public class Market implements IMarket {
             if(beforeWings.get(wing.getKey()) == null) continue;
             //本轮涨跌幅
             double currWings = Double.valueOf(wing.getValue()) - Double.valueOf(beforeWings.get(wing.getKey()));
-            DataMarket.CURRENT_WINGS.put(wing.getKey(),currWings);
+            DataMarket.CURRENT_WINGS.put(wing.getKey(),NumberUtil.numberToStr(currWings,true));
         }
         return result;
     }

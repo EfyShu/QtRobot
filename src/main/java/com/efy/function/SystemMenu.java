@@ -13,17 +13,20 @@ import javax.swing.*;
  **/
 @Function
 public class SystemMenu implements ISystemMenu {
-    private Boolean debug = false;
+    private boolean debug = false;
+    private boolean info = false;
 
     @Override
     public void setDebug(){
         this.debug = !this.debug;
     }
 
+    @Override
+    public void setInfo() {
+        this.info = !info;
+    }
+
     private void print(String message, boolean error){
-        if(!this.debug){
-            return;
-        }
         if(error){
             System.err.println(message);
         }else{
@@ -33,6 +36,17 @@ public class SystemMenu implements ISystemMenu {
 
     @Override
     public void printDebug(String message){
+        if(!this.debug){
+            return;
+        }
+        print(message,false);
+    }
+
+    @Override
+    public void printInfo(String message){
+        if(!this.info){
+            return;
+        }
         print(message,false);
     }
 

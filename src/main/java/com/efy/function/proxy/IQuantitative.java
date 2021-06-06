@@ -18,4 +18,10 @@ public interface IQuantitative {
 
     @Module(value = "自动下单",tags = {"量化类"})
     void autoPlace(JMenuItem menu);
+
+    boolean isBalanceFlag();
+
+    boolean isOrderFlag();
+
+    boolean isAutoPlaceFlag();
 }

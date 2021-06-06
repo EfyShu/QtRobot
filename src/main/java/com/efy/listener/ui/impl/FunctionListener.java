@@ -25,13 +25,13 @@ public class FunctionListener {
             }
         }
         ISystemMenu systemMenu = BeanMap.getBean(SystemMenu.class);
-        systemMenu.printDebug(getLogPre(method) + "调用:" + paramStr.toString());
+        systemMenu.printInfo(getLogPre(method) + "调用:" + paramStr.toString());
     }
 
     public void afterMethod(Method method, Object result) {
         if(!method.isAnnotationPresent(Module.class)) return;
         ISystemMenu systemMenu = BeanMap.getBean(SystemMenu.class);
-        systemMenu.printDebug(getLogPre(method) + "返回:" + result);
+        systemMenu.printInfo(getLogPre(method) + "返回:" + result);
     }
 
     /**

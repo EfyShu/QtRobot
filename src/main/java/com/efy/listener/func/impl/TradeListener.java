@@ -3,15 +3,18 @@ package com.efy.listener.func.impl;
 import com.efy.annotations.Listener;
 import com.efy.constant.DataMarket;
 import com.efy.function.Order;
-import com.efy.function.dto.order.OrderDto;
+import com.efy.function.Quantitative;
+import com.efy.function.enums.AccountEnum;
 import com.efy.function.enums.OrderEnum;
 import com.efy.function.param.order.PlaceParam;
 import com.efy.function.proxy.IOrder;
+import com.efy.function.proxy.IQuantitative;
 import com.efy.listener.func.IQuantitativeListener;
 import com.efy.listener.sys.BeanMap;
 import com.efy.ruleEngine.core.RuleBuilder;
 import com.efy.ruleEngine.core.RuleEngine;
 import com.efy.ruleEngine.dto.RuleDTO;
+import com.efy.util.NumberUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -28,18 +31,25 @@ public class TradeListener implements IQuantitativeListener {
         IOrder order = BeanMap.getBean(Order.class);
         //本次涨幅
         Map<String,String> lastWings = DataMarket.WINGS.get(DataMarket.WINGS.size() - 1);
+        int total = 0;
         for(Map.Entry<String,String> wing : lastWings.entrySet()){
+            if(!checkPlaceFlag()) return;
             //只看usdt
-            if(!wing.getKey().contains("usdt")) continue;
+            if(!wing.getKey().endsWith("usdt")) continue;
             if(buyPolicy(wing.getKey())){
                 PlaceParam param = new PlaceParam();
                 param.setSymbol(wing.getKey());
-                param.setAmount("5");
+                String amount = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet().get("usdt").getTradeBalance();
+                amount = NumberUtil.numberToStr(Double.valueOf(amount),true);
+//                String amount = "5";
+                param.setAmount(amount);
                 //市价购买
                 param.setType(OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_MARKET.code);
                 //如果成功,结果在数仓
                 order.place(param);
+                total++;
             }
+            if(total >= 10) break;
         }
     }
 
@@ -48,37 +58,47 @@ public class TradeListener implements IQuantitativeListener {
         IOrder order = BeanMap.getBean(Order.class);
         //本次涨幅
         Map<String,String> lastWings = DataMarket.WINGS.get(DataMarket.WINGS.size() - 1);
+        int total = 0;
         for(Map.Entry<String,String> wing : lastWings.entrySet()){
+            if(!checkPlaceFlag()) return;
             //只看usdt
-            if(!wing.getKey().contains("usdt")) continue;
-            //没下单过的不做交易
-            if(!hasOrder(wing.getKey())) continue;
+            if(!wing.getKey().endsWith("usdt")) continue;
+            //没持有的不做交易
+            if(!hasWallet(wing.getKey())) continue;
             if(sellPolicy(wing.getKey())){
                 PlaceParam param = new PlaceParam();
                 param.setSymbol(wing.getKey());
-                //按最低限价购入
-                param.setAmount("5");
+                String amount = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet()
+                        .get(wing.getKey().replace("usdt","")).getTradeBalance();
+                //全部卖出
+                param.setAmount(amount);
                 //市价卖出
                 param.setType(OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_MARKET.code);
                 //如果成功,结果在数仓
                 order.place(param);
+                total++;
             }
+            if(total >= 10) break;
         }
     }
 
     /**
-     * 检查是否有下过单
+     * 检查是否已经停止交易
+     * @return
+     */
+    private boolean checkPlaceFlag(){
+        IQuantitative quantitative = BeanMap.getBean(Quantitative.class);
+        return quantitative.isAutoPlaceFlag();
+    }
+
+    /**
+     * 检查是否持有
      * @param symbol
      * @return
      */
-    private boolean hasOrder(String symbol){
-        for(Map.Entry<Long, OrderDto> entry : DataMarket.ORDERS.entrySet()){
-            OrderDto order = entry.getValue();
-            if(order.getSymbol().equals(symbol)){
-                return true;
-            }
-        }
-        return false;
+    private boolean hasWallet(String symbol){
+        return DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet()
+                .get(symbol.replace("usdt","")) == null;
     }
 
     /**
@@ -90,7 +110,7 @@ public class TradeListener implements IQuantitativeListener {
         RuleBuilder rb = new RuleBuilder();
         try {
             List<RuleDTO> tree = rb
-                    .root("balance","余额",DataMarket.TRADE_BALANCE,">=","5")
+                    .root("balance","余额",DataMarket.TRADE_BALANCE,">=","10")
                     .build();
             return re.start(tree).getResult();
         } catch (Exception e) {
@@ -108,8 +128,8 @@ public class TradeListener implements IQuantitativeListener {
         RuleBuilder rb = new RuleBuilder();
         try {
             List<RuleDTO> tree = rb
-                    .root("upWings","涨幅",DataMarket.CURRENT_WINGS.get(symbol),">=","0.2")
-                    .or("downWings","跌幅",DataMarket.CURRENT_WINGS.get(symbol),"<=","-1")
+                    .root("upWings","涨幅",DataMarket.CURRENT_WINGS.get(symbol),">=","0.0")
+                    .or("downWings","跌幅",DataMarket.CURRENT_WINGS.get(symbol),"<=","-0.1")
                     .build();
             return re.start(tree).getResult();
         } catch (Exception e) {

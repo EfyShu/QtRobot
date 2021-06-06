@@ -15,30 +15,31 @@ public class Application {
     private static String[][] defaultMenu = new String[][]{
             new String[]{"系统设置","com.efy.function.SystemMenu",
                     "调试模式","setDebug@1",
+                    "监控模式","setInfo@1",
                     "清空面板","clearPanel",
             }
     };
 
     //菜单项
     private static String[][] items = new String[][]{
-            new String[]{"账户功能","com.efy.function.Account",
-                    "载入账户","login",
+            new String[]{"账户功能", "com.efy.function.Account",
+                    "载入账户", "login",
             },
-            new String[]{"量化功能","com.efy.function.Quantitative",
-                    "监控钱包状态","listenBalance@1:this",
-                    "监控订单状态","listenOrder@1:this",
-                    "自动下单","autoPlace@1:this",
+            new String[]{"量化功能", "com.efy.function.Quantitative",
+                    "监控钱包状态", "listenBalance@1:this",
+                    "监控订单状态", "listenOrder@1:this",
+                    "自动下单", "autoPlace@1:this",
             },
 //            new String[]{"市场功能","com.efy.function.Market",
 //                    "获取K线","kline",
 //                    "单交易对聚合行情","merged",
 //                    "全交易对聚合行情","tickers",
 //            },
-            new String[]{"订单功能","com.efy.function.Order",
-                    "设置超时时间","caa",
+            new String[]{"订单功能", "com.efy.function.Order",
+                    "设置超时时间", "caa",
             },
-            new String[]{"其它","com.efy.function.SystemMenu",
-                    "版权","showCopyright"
+            new String[]{"其它", "com.efy.function.SystemMenu",
+                    "版权", "showCopyright"
             }
     };
 
