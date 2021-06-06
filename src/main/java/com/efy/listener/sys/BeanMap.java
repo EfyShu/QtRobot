@@ -3,10 +3,13 @@ package com.efy.listener.sys;
 import com.efy.annotations.Aspect;
 import com.efy.annotations.Function;
 import com.efy.annotations.Listener;
+import com.efy.listener.ui.impl.FunctionListener;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -51,6 +54,7 @@ public class BeanMap {
 
     public static void loadBeans(String packagePath){
         List<Class> beanClasses = BeanMap.scanClass(packagePath, Aspect.class, Listener.class,Function.class);
+        FunctionListener functionListener = new FunctionListener();
         for(Class clazz : beanClasses){
             try {
                 if(clazz.isAnnotationPresent(Aspect.class)){
@@ -58,7 +62,7 @@ public class BeanMap {
                 }else if(clazz.isAnnotationPresent(Listener.class)){
                     doListener(clazz);
                 }else if(clazz.isAnnotationPresent(Function.class)){
-                    doFunction(clazz);
+                    doFunction(clazz,functionListener);
                 }
             } catch (InstantiationException e) {
                 e.printStackTrace();
@@ -113,11 +117,11 @@ public class BeanMap {
         BeanMap.addBean(clazz.getCanonicalName(),clazz.newInstance());
     }
 
-    private static void doFunction(Class clazz) throws IllegalAccessException, InstantiationException {
-        //TODO 动态代理,后期实现
-//        InvocationHandler handler = new BeanInvocation(clazz.newInstance(),BeanMap.getBean(AbstractButtonListener.class));
-//        Object proxy = Proxy.newProxyInstance(clazz.getClassLoader(), new Class<?>[]{clazz}, handler);
-        BeanMap.addBean(clazz.getCanonicalName(),clazz.newInstance());
+    private static void doFunction(Class clazz, FunctionListener listener) throws IllegalAccessException, InstantiationException {
+        InvocationHandler handler = new BeanInvocation(clazz.newInstance(),listener);
+        Object proxy = Proxy.newProxyInstance(clazz.getClassLoader(), clazz.getInterfaces(), handler);
+        BeanMap.addBean(clazz.getCanonicalName(),proxy);
+//        BeanMap.addBean(clazz.getCanonicalName(),clazz.newInstance());
     }
 
     private static List<String> getClassNames(File file,List<String> list,String packagePath){

@@ -7,6 +7,8 @@ import com.efy.constant.HuobiOpts;
 import com.efy.function.SystemMenu;
 import com.efy.function.dto.Result;
 import com.efy.function.param.UrlParams;
+import com.efy.function.proxy.ISystemMenu;
+import com.efy.listener.sys.BeanMap;
 import io.swagger.models.HttpMethod;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
@@ -53,14 +55,15 @@ public class RestUtil {
         Response response = null;
         try {
             String responseBody;
-            SystemMenu.printDebug("Rest调用:"+request.url());
+            ISystemMenu systemMenu = BeanMap.getBean(SystemMenu.class);
+            systemMenu.printDebug("Rest调用:"+request.url());
             response = client.newCall(request).execute();
             if(!response.isSuccessful() || response == null || response.body() == null){
-                SystemMenu.printError("Rest调用失败");
-                SystemMenu.printError(response.toString());
+                systemMenu.printError("Rest调用失败");
+                systemMenu.printError(response.toString());
             }
             responseBody = response.body().string();
-            SystemMenu.printDebug("调用结果:"+responseBody);
+            systemMenu.printDebug("调用结果:"+responseBody);
             return responseBody;
         } catch (IOException e) {
             throw e;

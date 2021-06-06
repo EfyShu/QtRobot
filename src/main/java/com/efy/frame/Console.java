@@ -1,7 +1,6 @@
 package com.efy.frame;
 
 
-import com.efy.listener.ui.IButtonListener;
 import com.efy.listener.ui.impl.MenuListener;
 import com.efy.util.SwingStream;
 
@@ -125,7 +124,7 @@ public class Console{
 	 */
 	private JMenuBar initMenu(String[][] defaultItems,String[][] customItems){
 		JMenuBar menuBar = new JMenuBar();
-		IButtonListener buttonListener = new MenuListener();
+		MenuListener buttonListener = new MenuListener();
 		//默认菜单项
 		bindListener(menuBar,defaultItems,buttonListener);
 		//自定义菜单项
@@ -139,7 +138,7 @@ public class Console{
 	 * @param menus
 	 * @param buttonListener
 	 */
-	private void bindListener(JMenuBar menuBar,String[][] menus,IButtonListener buttonListener){
+	private void bindListener(JMenuBar menuBar,String[][] menus,MenuListener buttonListener){
 		boolean checkBoxFlag = false;
 		for(String[] item : menus){
 			JMenu menu = new JMenu(item[0]);

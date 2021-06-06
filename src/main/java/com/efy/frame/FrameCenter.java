@@ -1,7 +1,6 @@
 package com.efy.frame;
 
 
-import com.efy.listener.ui.IButtonListener;
 import com.efy.listener.ui.impl.MenuListener;
 import com.efy.listener.ui.impl.WindowMoveSyn;
 import com.efy.listener.ui.impl.WindowShowSyn;
@@ -32,7 +31,7 @@ public class FrameCenter implements Serializable{
 	public static JPanel mainPanel = new JPanel();
 	public static Console console;
 	private static String[][] buttons;
-	private static IButtonListener buttonListener;
+	private static MenuListener buttonListener;
 	
 	public FrameCenter() {
 		buttons = new String[][]{
@@ -226,7 +225,6 @@ public class FrameCenter implements Serializable{
 	 * <p><b>例:new String[]{"密码键盘","com.efy.device.Pin","开启","open","接收输入","startEPP"}</b>
 	 * <p><b>该数组会在面板生成标签为"密码键盘",监听类为com.efy.device.Pin,含有"开启"和"接收输入"按钮,
 	 * 		 "开启"和"接收输入"响应该类中的open和startEPP方法段</b>
-	 * @see IButtonListener
 	 * @see MenuListener
 	 */
 	public void setButtons(String[][] buttons) {
@@ -241,11 +239,11 @@ public class FrameCenter implements Serializable{
 		return mainPanel;
 	}
 
-	public IButtonListener getButtonListener() {
+	public MenuListener getButtonListener() {
 		return buttonListener;
 	}
 
-	public void setButtonListener(IButtonListener buttonListener) {
+	public void setButtonListener(MenuListener buttonListener) {
 		FrameCenter.buttonListener = buttonListener;
 	}
 

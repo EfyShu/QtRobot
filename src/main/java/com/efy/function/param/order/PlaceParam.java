@@ -23,7 +23,7 @@ public class PlaceParam implements RequestParam {
     private String symbol = MarketEnum.MARKET_SYMBOL_SHIB_USDT.code;
     @ApiModelProperty(value = "订单类型,通过方向(buy,sell)-行为类型(market,limit...)组合",required = true)
     private String type = OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_MARKET.code;
-    @ApiModelProperty(value = "订单交易量（市价买单为订单交易额）",required = true)
+    @ApiModelProperty(value = "订单交易量（市价买单为订单交易额,最好使用整数）",required = true)
     private String amount;
     @ApiModelProperty("订单价格（对市价单无效）")
     private String price;
@@ -37,4 +37,8 @@ public class PlaceParam implements RequestParam {
     private String stopPrice;
     @ApiModelProperty(value = "止盈止损订单运算符",allowableValues = ">=,<=")
     private String operator;
+
+    public void setAmount(String amount){
+        this.amount = Integer.valueOf(amount).toString();
+    }
 }

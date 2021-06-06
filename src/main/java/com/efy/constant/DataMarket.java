@@ -26,6 +26,9 @@ public class DataMarket {
     /**涨幅榜(key-symbol,value-日涨幅<24小时滚动价>)**/
     public static List<Map<String,String>> WINGS = new CopyOnWriteArrayList<>();
 
+    /**本轮涨跌幅(key-symbol,value-本轮涨跌幅)**/
+    public static Map<String,Double> CURRENT_WINGS = new ConcurrentHashMap<>();
+
     /**现价榜(key-symbol,value-聚合行情)**/
     public static Map<String, TickersDto> TICKERS = new ConcurrentHashMap<>();
 
@@ -34,5 +37,8 @@ public class DataMarket {
 
     /**订单查询分页缓存(记录分页所需参数,如key->open-prev,value->上一次查询结果中得到的第一条id)**/
     public static Map<String,Long> ORDER_PAGE = new ConcurrentHashMap<>();
+
+    /**当前可用余额**/
+    public static Integer TRADE_BALANCE;
 
 }

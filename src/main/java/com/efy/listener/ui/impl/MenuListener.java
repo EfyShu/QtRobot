@@ -15,7 +15,7 @@ import javax.swing.*;
  *
  */
 @Listener
-public class MenuListener extends AbstractButtonListener {
+public class MenuListener {
 
     public void excute(final AbstractButton button, final String[] strList, final Object devObj) {
         int i = 0;
@@ -43,7 +43,6 @@ public class MenuListener extends AbstractButtonListener {
         }
     }
 
-    @Override
     public void addListener(AbstractButton button, final String[] strList) {
         button.addActionListener(e -> {
             AbstractButton tempButton = (AbstractButton) e.getSource();

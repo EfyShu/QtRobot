@@ -9,6 +9,7 @@ import com.efy.function.dto.order.*;
 import com.efy.function.enums.OrderEnum;
 import com.efy.function.param.UrlParams;
 import com.efy.function.param.order.*;
+import com.efy.function.proxy.IOrder;
 import com.efy.util.RestUtil;
 
 import javax.swing.*;
@@ -21,7 +22,7 @@ import java.util.List;
  * 订单交易类
  **/
 @Function
-public class Order {
+public class Order implements IOrder {
     //现货下单接口地址
     private static final String PLACE = "/v1/order/orders/place";
     //设置超时取消时间(针对网络异常,应用崩溃等因素导致的撤销失败等,可以在超时后自动取消)接口地址
@@ -39,6 +40,7 @@ public class Order {
     //查询订单详情接口地址
     private static final String QUERY = "/v1/order/orders/{order-id}";
 
+    @Override
     @Module(value = "设置超时取消时间",tags = {"订单类"})
     public Result<CaaDto> caa(){
         String timeout = JOptionPane.showInputDialog("超时时间");
@@ -60,6 +62,7 @@ public class Order {
         return result;
     }
 
+    @Override
     @Module(value = "现货下单",tags = {"订单类"})
     public Result<Long> place(PlaceParam param){
         Result<Long> result = RestUtil.post(PLACE, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),Long.class);
@@ -72,10 +75,20 @@ public class Order {
             dto.setType(param.getType());
             dto.setState(OrderEnum.ORDER_STATE_CREATED.code);
             DataMarket.ORDERS.put(result.getData(), dto);
+            //更新可交易余额
+            synchronized (DataMarket.TRADE_BALANCE){
+                DataMarket.TRADE_BALANCE -= Integer.parseInt(param.getAmount());
+            }
+            String direDesc = param.getType().contains(OrderEnum.ORDER_DIRECTION_BUY.code) ? "买入" : "卖出";
+            System.out.println(direDesc+param.getSymbol()+"成功.订单号为:"+result.getData());
+        }else{
+            String direDesc = param.getType().contains(OrderEnum.ORDER_DIRECTION_BUY.code) ? "买入" : "卖出";
+            System.out.println(direDesc+param.getSymbol()+"失败.原因为:"+result.getMessage());
         }
         return result;
     }
 
+    @Override
     @Module(value = "查询未成交订单",tags = {"订单类"})
     public Result<List<OpenOrderDto>> queryOpen(OpenOrderParam param){
         Result<List<OpenOrderDto>> result = RestUtil.post(PLACE, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),OpenOrderDto.class);
@@ -94,6 +107,7 @@ public class Order {
         return result;
     }
 
+    @Override
     @Module(value = "查询已成交订单",tags = {"订单类"})
     public Result<List<MatchedOrderDto>> queryMatched(MatchedOrderParam param){
         Result<List<MatchedOrderDto>> result = RestUtil.post(PLACE, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),MatchedOrderDto.class);
@@ -112,6 +126,7 @@ public class Order {
         return result;
     }
 
+    @Override
     @Module(value = "取消所有订单",tags = {"订单类"})
     public Result<CancelAllDto> cancelAll(CancelAllParam param){
         Result<CancelAllDto> result = RestUtil.post(PLACE, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),CancelAllDto.class);
@@ -121,6 +136,7 @@ public class Order {
         return result;
     }
 
+    @Override
     @Module(value = "批量取消指定单",tags = {"订单类"})
     public Result<BatchCancelDto> batchCancel(BatchCancelParam param){
         Result<BatchCancelDto> result = RestUtil.post(PLACE, DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),BatchCancelDto.class);
@@ -144,6 +160,7 @@ public class Order {
         return result;
     }
 
+    @Override
     @Module(value = "取消订单",tags = {"订单类"})
     public Result<Integer> cancel(CancelParam param){
         String realPath = CANCEL.replace("{order-id}",param.getOrderId().toString());
@@ -160,6 +177,7 @@ public class Order {
         return result;
     }
 
+    @Override
     @Module(value = "查询订单详情",tags = {"订单类"})
     public Result<QueryDto> query(QueryParam param){
         String realPath = QUERY.replace("{order-id}",param.getOrderId().toString());

@@ -11,6 +11,7 @@ import com.efy.function.param.UrlParams;
 import com.efy.function.param.market.KLineParam;
 import com.efy.function.param.market.MergedParam;
 import com.efy.function.param.market.TickersParam;
+import com.efy.function.proxy.IMarket;
 import com.efy.util.NumberUtil;
 import com.efy.util.RestUtil;
 
@@ -25,7 +26,7 @@ import java.util.TreeMap;
  * Description :
  **/
 @Function
-public class Market {
+public class Market implements IMarket {
     //获取K线接口地址
     public static final String KLINE = "/market/history/kline";
     //单交易对聚合行情接口地址
@@ -36,18 +37,21 @@ public class Market {
     //涨幅榜保留数据个数(每次保存全量数据,需定时滚动,否则内存无限消耗)
     public static final int billBoardCount = 5;
 
+    @Override
     @Module(value = "获取K线",tags = {"行情类"})
     public Result<KLineDto> kline(KLineParam param){
         Result<KLineDto> result = RestUtil.get(KLINE,DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),KLineDto.class);
         return result;
     }
 
+    @Override
     @Module(value = "单交易对聚合行情",tags = {"行情类"})
     public Result<MergedDto> merged(MergedParam param){
         Result<MergedDto> result = RestUtil.get(MERGED,DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),MergedDto.class);
         return result;
     }
 
+    @Override
     @Module(value = "全交易对聚合行情",tags = {"行情类"})
     public Result<List<TickersDto>> tickers(TickersParam param){
         Result<List<TickersDto>> result = RestUtil.get(TICKERS,DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),TickersDto.class);
@@ -69,6 +73,20 @@ public class Market {
             DataMarket.WINGS.remove(0);
         }
         DataMarket.WINGS.add(sortMap);
+        //计算本轮涨跌幅(缓存数据小于2次时不执行)
+        if(DataMarket.WINGS.size() < 2){
+            return result;
+        }
+        //上次涨幅
+        Map<String,String> beforeWings = DataMarket.WINGS.get(DataMarket.WINGS.size() - 2);
+        //本次涨幅
+        Map<String,String> lastWings = DataMarket.WINGS.get(DataMarket.WINGS.size() - 1);
+        for(Map.Entry<String,String> wing : lastWings.entrySet()){
+            if(beforeWings.get(wing.getKey()) == null) continue;
+            //本轮涨跌幅
+            double currWings = Double.valueOf(wing.getValue()) - Double.valueOf(beforeWings.get(wing.getKey()));
+            DataMarket.CURRENT_WINGS.put(wing.getKey(),currWings);
+        }
         return result;
     }
 }

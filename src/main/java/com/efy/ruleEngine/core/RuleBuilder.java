@@ -101,15 +101,15 @@ public class RuleBuilder {
                 ,rule.getTargetValue(),rule.getScore(),rule.getListener());
     }
 
-    public RuleBuilder root(String field,String desc,String operator,Object source,Object target) throws Exception {
+    public RuleBuilder root(String field,String desc,Object source,String operator,Object target) throws Exception {
         return root(field,desc,source,operator,target,0.0D);
     }
 
-    public RuleBuilder and(String field,String desc,String operator,Object source,Object target) throws Exception {
+    public RuleBuilder and(String field,String desc,Object source,String operator,Object target) throws Exception {
         return and(field,desc,source,operator,target,0.0D);
     }
 
-    public RuleBuilder or(String field,String desc,String operator,Object source,Object target) throws Exception {
+    public RuleBuilder or(String field,String desc,Object source,String operator,Object target) throws Exception {
         return or(field,desc,source,operator,target,0.0D);
     }
 

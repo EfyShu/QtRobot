@@ -1,6 +1,6 @@
 package com.efy.listener.sys;
 
-import com.efy.listener.ui.impl.AbstractButtonListener;
+import com.efy.listener.ui.impl.FunctionListener;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -12,9 +12,9 @@ import java.lang.reflect.Method;
  **/
 public class BeanInvocation implements InvocationHandler {
     private Object target;
-    private AbstractButtonListener listener;
+    private FunctionListener listener;
 
-    public BeanInvocation(Object target,AbstractButtonListener listener) {
+    public BeanInvocation(Object target, FunctionListener listener) {
         this.target = target;
         this.listener = listener;
     }
@@ -26,5 +26,9 @@ public class BeanInvocation implements InvocationHandler {
         Object result = method.invoke(target,args);
         listener.afterMethod(method,result);
         return result;
+    }
+
+    public Object getTarget() {
+        return target;
     }
 }

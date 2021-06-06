@@ -1,29 +1,18 @@
 package com.efy.listener.ui.impl;
 
 import com.efy.annotations.Module;
+import com.efy.function.SystemMenu;
+import com.efy.function.proxy.ISystemMenu;
 import com.efy.listener.sys.BeanMap;
-import com.efy.listener.ui.IButtonListener;
 
-import javax.swing.*;
 import java.lang.reflect.Method;
 
 /**
  * Author : Efy Shu
- * Date : 2021/5/11 14:46
+ * Date : 2021/6/7 3:27
  * Description :
  **/
-public abstract class AbstractButtonListener implements IButtonListener {
-
-    public AbstractButtonListener() {
-        BeanMap.addBean(this.getClass().getCanonicalName(),this);
-    }
-
-    @Override
-    public void addListener(AbstractButton button, String[] strList) {
-
-    }
-
-    @Override
+public class FunctionListener {
     public void preMethod(Method method, Object... params) {
         if(!method.isAnnotationPresent(Module.class)) return;
         StringBuffer paramStr = new StringBuffer();
@@ -35,13 +24,14 @@ public abstract class AbstractButtonListener implements IButtonListener {
                 paramStr.append(param.toString());
             }
         }
-        System.out.println(getLogPre(method) + "调用:" + paramStr.toString());
+        ISystemMenu systemMenu = BeanMap.getBean(SystemMenu.class);
+        systemMenu.printDebug(getLogPre(method) + "调用:" + paramStr.toString());
     }
 
-    @Override
     public void afterMethod(Method method, Object result) {
         if(!method.isAnnotationPresent(Module.class)) return;
-        System.out.println(getLogPre(method) + "返回:" + result);
+        ISystemMenu systemMenu = BeanMap.getBean(SystemMenu.class);
+        systemMenu.printDebug(getLogPre(method) + "返回:" + result);
     }
 
     /**

@@ -10,6 +10,8 @@ import com.efy.function.enums.AccountEnum;
 import com.efy.function.param.UrlParams;
 import com.efy.function.param.account.AssetParam;
 import com.efy.function.param.account.BalanceParam;
+import com.efy.function.proxy.IAccount;
+import com.efy.listener.sys.BeanMap;
 import com.efy.util.RestUtil;
 
 import javax.swing.*;
@@ -23,7 +25,7 @@ import java.util.List;
  * 账户接口
  **/
 @Function
-public class Account {
+public class Account implements IAccount {
     //获取账号信息接口地址
     public static final String ACCOUNT = "/v1/account/accounts";
     //获取钱包信息接口地址
@@ -32,6 +34,7 @@ public class Account {
     public static final String ASSET = "/v2/account/asset-valuation";
 
 
+    @Override
     public void login(){
 //        String accessKey = "";
 //        String secretKey = "";
@@ -44,13 +47,14 @@ public class Account {
             JOptionPane.showMessageDialog(Console.getInstance().getConsole(),
                     "载入账户信息失败,请重试!","错误提示",JOptionPane.ERROR_MESSAGE);
         }else{
-            balance(new BalanceParam());
-            asset(new AssetParam());
+            IAccount account = BeanMap.getBean(Account.class);
+            account.balance(new BalanceParam());
+            account.asset(new AssetParam());
             System.out.println("载入完成");
-            JOptionPane.showMessageDialog(Console.getInstance().getConsole(),"载入完成");
         }
     }
 
+    @Override
     @Module(name = "获取账户信息",tags = {"账户类"})
     public Result<List<AccountDto>> info(){
         UrlParams params = new UrlParams();
@@ -63,6 +67,7 @@ public class Account {
         return result;
     }
 
+    @Override
     @Module(name = "获取钱包信息",tags = {"账户类"})
     public Result<BalanceDto> balance(BalanceParam param){
         AccountDto account = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code);
@@ -72,7 +77,11 @@ public class Account {
         for(CurrencyDto currencyDto : result.getData().getList()){
             //过滤小额币种
             if(!"0".equals(currencyDto.getBalance())){
-                //添加到账户钱包信息
+                //可交易的usdt数量
+                if(currencyDto.getCurrency().equals("usdt") && AccountEnum.CURRENCY_TYPE_TRADE.code.equals(currencyDto.getType())){
+                    DataMarket.TRADE_BALANCE = (int)Double.parseDouble(currencyDto.getBalance());
+                }
+                //添加到账户钱包信息(已存在则更新,否则新增)
                 if(account.getWallet().get(currencyDto.getCurrency()) != null){
                     if(AccountEnum.CURRENCY_TYPE_TRADE.code.equals(currencyDto.getType())){
                         account.getWallet().get(currencyDto.getCurrency()).setTradeBalance(currencyDto.getBalance());
@@ -95,6 +104,7 @@ public class Account {
         return result;
     }
 
+    @Override
     @Module(value = "资产估值",tags = {"账户类"})
     public Result<AssetDto> asset(AssetParam param){
         AccountDto account = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code);

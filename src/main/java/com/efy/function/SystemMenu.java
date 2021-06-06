@@ -2,6 +2,7 @@ package com.efy.function;
 
 import com.efy.annotations.Function;
 import com.efy.frame.Console;
+import com.efy.function.proxy.ISystemMenu;
 
 import javax.swing.*;
 
@@ -11,15 +12,16 @@ import javax.swing.*;
  * Description :
  **/
 @Function
-public class SystemMenu {
-    private static Boolean debug = false;
+public class SystemMenu implements ISystemMenu {
+    private Boolean debug = false;
 
-    public static void setDebug(){
-        SystemMenu.debug = !SystemMenu.debug;
+    @Override
+    public void setDebug(){
+        this.debug = !this.debug;
     }
 
-    public static void print(String message,boolean error){
-        if(!SystemMenu.debug){
+    private void print(String message, boolean error){
+        if(!this.debug){
             return;
         }
         if(error){
@@ -28,18 +30,23 @@ public class SystemMenu {
             System.out.println(message);
         }
     }
-    public static void printDebug(String message){
+
+    @Override
+    public void printDebug(String message){
         print(message,false);
     }
 
-    public static void printError(String message){
+    @Override
+    public void printError(String message){
         print(message,true);
     }
 
+    @Override
     public void clearPanel(){
         Console.text.setText("");
     }
 
+    @Override
     public void showCopyright(){
         JOptionPane.showMessageDialog(Console.getInstance().getConsole(),"版权所有:Efy Shu");
     }
