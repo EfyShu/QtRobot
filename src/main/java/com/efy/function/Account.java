@@ -11,6 +11,7 @@ import com.efy.function.param.UrlParams;
 import com.efy.function.param.account.AssetParam;
 import com.efy.function.param.account.BalanceParam;
 import com.efy.function.proxy.IAccount;
+import com.efy.function.proxy.IMarket;
 import com.efy.listener.sys.BeanMap;
 import com.efy.util.RestUtil;
 
@@ -41,15 +42,18 @@ public class Account implements IAccount {
 //        DataMarket.ACCESS_KEY = accessKey;
 //        DataMarket.SECRET_KEY = secretKey;
         System.out.println("载入中...");
-        Result<List<AccountDto>> result = info();
+        IAccount account = BeanMap.getBean(Account.class);
+        Result<List<AccountDto>> result = account.info();
         if(!"ok".equals(result.getStatus())){
             System.out.println("载入账户信息失败,请重试!");
             JOptionPane.showMessageDialog(Console.getInstance().getConsole(),
                     "载入账户信息失败,请重试!","错误提示",JOptionPane.ERROR_MESSAGE);
         }else{
-            IAccount account = BeanMap.getBean(Account.class);
+            IMarket market = BeanMap.getBean(Market.class);
             account.balance(new BalanceParam());
             account.asset(new AssetParam());
+            market.symbols();
+            DataMarket.BASE_ASSETS = Double.valueOf(DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getValuation());
             System.out.println("载入完成");
         }
     }
@@ -63,6 +67,8 @@ public class Account implements IAccount {
             for(AccountDto dto : result.getData()){
                 DataMarket.ACCOUNTS.put(dto.getType(),dto);
             }
+        }else{
+            System.err.println("获取账户信息失败!!!");
         }
         return result;
     }
@@ -73,6 +79,10 @@ public class Account implements IAccount {
         AccountDto account = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code);
         String realPath = BALANCE.replace("{account-id}",param.getAccountId());
         Result<BalanceDto> result = RestUtil.get(realPath,DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),BalanceDto.class);
+        if(!"ok".equals(result.getStatus())){
+            System.err.println("获取钱包信息失败!!!");
+            return result;
+        }
         List<CurrencyDto> hasBalanceList = new ArrayList<>();
         for(CurrencyDto currencyDto : result.getData().getList()){
             //过滤小额币种

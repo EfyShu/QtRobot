@@ -6,6 +6,7 @@ import com.efy.constant.DataMarket;
 import com.efy.function.dto.Result;
 import com.efy.function.dto.market.KLineDto;
 import com.efy.function.dto.market.MergedDto;
+import com.efy.function.dto.market.SymbolsDto;
 import com.efy.function.dto.market.TickersDto;
 import com.efy.function.param.UrlParams;
 import com.efy.function.param.market.KLineParam;
@@ -32,8 +33,9 @@ public class Market implements IMarket {
     //单交易对聚合行情接口地址
     public static final String MERGED = "/market/detail/merged";
     //全交易对聚合行情接口地址
+    public static final String SYMBOLS = "/v1/common/symbols";
+    //全交易对聚合行情接口地址
     public static final String TICKERS = "/market/tickers";
-
     //涨幅榜保留数据个数(每次保存全量数据,需定时滚动,否则内存无限消耗)
     public static final int billBoardCount = 5;
 
@@ -48,6 +50,18 @@ public class Market implements IMarket {
     @Module(value = "单交易对聚合行情",tags = {"行情类"})
     public Result<MergedDto> merged(MergedParam param){
         Result<MergedDto> result = RestUtil.get(MERGED,DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(param),MergedDto.class);
+        return result;
+    }
+
+    @Override
+    @Module(value = "所有交易对基础信息",tags = {"基础类"})
+    public Result<List<SymbolsDto>> symbols() {
+        Result<List<SymbolsDto>> result = RestUtil.get(SYMBOLS,DataMarket.ACCESS_KEY,DataMarket.SECRET_KEY,new UrlParams(),SymbolsDto.class);
+        if("ok".equals(result.getStatus())) {
+            for(SymbolsDto dto : result.getData()){
+                DataMarket.SYMBOLS.put(dto.getBaseCurrency()+dto.getQuoteCurrency(),dto);
+            }
+        }
         return result;
     }
 

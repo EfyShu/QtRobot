@@ -31,4 +31,17 @@ public class NumberUtil {
         }
         return "0";
     }
+
+    public static String format(Object number,int partition){
+        if(number instanceof Float || number instanceof Double){
+            try {
+                BigDecimal bigDecimal = new BigDecimal(number.toString())
+                        .setScale(partition, RoundingMode.DOWN);
+                return bigDecimal.toPlainString();
+            }catch (Exception e){
+
+            }
+        }
+        return "0";
+    }
 }

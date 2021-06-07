@@ -6,6 +6,7 @@ import com.efy.function.enums.AccountEnum;
 import com.efy.function.enums.MarketEnum;
 import com.efy.function.enums.OrderEnum;
 import com.efy.function.param.RequestParam;
+import com.efy.util.NumberUtil;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -23,7 +24,7 @@ public class PlaceParam implements RequestParam {
     private String symbol = MarketEnum.MARKET_SYMBOL_SHIB_USDT.code;
     @ApiModelProperty(value = "订单类型,通过方向(buy,sell)-行为类型(market,limit...)组合",required = true)
     private String type = OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_MARKET.code;
-    @ApiModelProperty(value = "订单交易量（市价买单为订单交易额,尽量使用整数）",required = true)
+    @ApiModelProperty(value = "订单交易量（市价买单为订单交易额）",required = true)
     private String amount;
     @ApiModelProperty("订单价格（对市价单无效）")
     private String price;
@@ -37,4 +38,31 @@ public class PlaceParam implements RequestParam {
     private String stopPrice;
     @ApiModelProperty(value = "止盈止损订单运算符",allowableValues = ">=,<=")
     private String operator;
+
+    public String getPrice() {
+        if(price == null) return null;
+        int precision = DataMarket.SYMBOLS.get(symbol).getPricePrecision();
+        if((OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code).equals(type)
+                || (OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code).equals(type)
+        ){
+            precision = DataMarket.SYMBOLS.get(symbol).getPricePrecision();
+        }
+        return NumberUtil.format(Double.valueOf(price),precision);
+    }
+
+    public String getAmount() {
+        if(amount == null) return null;
+        int precision = 2;
+        if((OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_MARKET.code).equals(type)){
+            precision = DataMarket.SYMBOLS.get(symbol).getValuePrecision();
+        }else if((OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_MARKET.code).equals(type)
+                || (OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code).equals(type)
+                || (OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code).equals(type)
+                || (OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT_MAKER.code).equals(type)
+                || (OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT_MAKER.code).equals(type)
+        ){
+            precision = DataMarket.SYMBOLS.get(symbol).getAmountPrecision();
+        }
+        return NumberUtil.format(Double.valueOf(amount),precision);
+    }
 }

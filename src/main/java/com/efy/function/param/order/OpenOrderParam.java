@@ -20,8 +20,8 @@ public class OpenOrderParam implements RequestParam {
     private String accountId = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getId();
     @ApiModelProperty(value = "交易对",required = true)
     private String symbol = MarketEnum.MARKET_SYMBOL_SHIB_USDT.code;
-    @ApiModelProperty(value = "方向,可指定一个方向的订单,默认都返回",allowableValues = "buy,sell")
-    private String side;
+    @ApiModelProperty(value = "方向,可指定一个方向的订单,默认都返回",allowableValues = "buy,sell,both")
+    private String side = "both";
     @ApiModelProperty("订单类型组合,以逗号分割")
     private String types;
     @ApiModelProperty("查询起始ID,向后则赋值为上一次查询结果中得到的最后一条id,向前赋值为上一次查询结果中得到的第一条id")

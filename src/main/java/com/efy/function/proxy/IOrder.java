@@ -17,7 +17,7 @@ public interface IOrder {
     Result<CaaDto> caa();
 
     @Module(value = "现货下单",tags = {"订单类"})
-    Result<Long> place(PlaceParam param);
+    Result<String> place(PlaceParam param);
 
     @Module(value = "查询未成交订单",tags = {"订单类"})
     Result<List<OpenOrderDto>> queryOpen(OpenOrderParam param);

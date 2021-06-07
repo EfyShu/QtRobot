@@ -13,7 +13,7 @@ import lombok.Data;
 public class BatchCancelFailedDto {
     @JSONField(name = "order-id")
     @ApiModelProperty("订单编号（如用户创建订单时包含order-id，返回中也须包含此字段）")
-    private Long orderId;
+    private String orderId;
     @JSONField(name = "client-err-code")
     @ApiModelProperty("用户自编订单号（如用户创建订单时包含client-order-id，返回中也须包含此字段）")
     private String clientErrCode;

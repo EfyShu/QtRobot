@@ -21,7 +21,7 @@ public class OrderDto {
     private String source;
     @JSONField(name = "order-id")
     @ApiModelProperty("订单 ID")
-    private Long orderId;
+    private String orderId;
     @ApiModelProperty("订单类型")
     private String type;
     @ApiModelProperty("交易对, 例如btcusdt,ethbtc")

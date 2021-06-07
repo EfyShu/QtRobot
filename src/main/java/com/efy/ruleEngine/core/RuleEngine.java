@@ -58,9 +58,9 @@ public class RuleEngine {
             }else{
                 return "()".equals(operator) == target.equals(source);
             }
-        }else if(source instanceof String){
-            return "=".equals(operator) ? source.equals(target) :
-                   "!=".equals(operator) && !source.equals(target);
+        }else if((source instanceof String) || (source instanceof Boolean)){
+            return "=".equals(operator) ? source.toString().equals(target) :
+                   "!=".equals(operator) && !source.toString().equals(target);
         }else{
             BigDecimal bSource = toNumber(source);
             BigDecimal bTarget = toNumber(target);
@@ -84,7 +84,12 @@ public class RuleEngine {
      */
     private BigDecimal toNumber(Object source){
         try {
-            BigDecimal sourceNumber = new BigDecimal(source+"");
+            BigDecimal sourceNumber;
+            if(source.toString().startsWith("-")){
+                sourceNumber = new BigDecimal(source.toString().replace("-","")).negate();
+            }else{
+                sourceNumber = new BigDecimal(source.toString());
+            }
             return sourceNumber;
         }catch (Exception e){
 //            throw e;
