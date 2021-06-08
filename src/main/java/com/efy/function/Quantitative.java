@@ -64,7 +64,7 @@ public class Quantitative implements IQuantitative {
                         systemMenu.clearPanel();
                         System.out.println("账户估值:" + spotAcc.getValuation() + ",今日涨跌:" + NumberUtil.format(todayWings,2));
                     }
-                    if(todayWings <= -5D){
+                    if(todayWings <= -15D){
                         this.orderFlag = false;
                         this.autoPlaceFlag = false;
                         this.balanceFlag = false;

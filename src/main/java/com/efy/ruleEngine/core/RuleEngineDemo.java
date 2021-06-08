@@ -14,7 +14,7 @@ import java.util.List;
 public class RuleEngineDemo {
     public static void main(String[] args) throws Exception {
         long start,end;
-        RuleEngine engine = RuleEngine.getIns();
+        RuleEngine engine = new RuleEngine();
         engine.setCardMode(false,true);
         start = System.currentTimeMillis();
         RuleBuilder rb = new RuleBuilder();

@@ -21,14 +21,6 @@ public class RuleEngine {
     private boolean cardMode = false;
     /**简单模式(配合评分卡使用,true - 非全量遍历, false - 全量遍历)**/
     private boolean simpleMode = true;
-    private RuleEngine(){}
-
-    public static RuleEngine getIns() {
-        if(ins == null){
-            ins = new RuleEngine();
-        }
-        return ins;
-    }
 
     /**
      * 比对方法

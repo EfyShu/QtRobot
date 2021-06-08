@@ -15,6 +15,7 @@ import com.efy.listener.func.IQuantitativeListener;
 import com.efy.listener.sys.BeanMap;
 import com.efy.ruleEngine.core.RuleBuilder;
 import com.efy.ruleEngine.core.RuleEngine;
+import com.efy.ruleEngine.dto.ResultDTO;
 import com.efy.ruleEngine.dto.RuleDTO;
 
 import java.util.List;
@@ -36,13 +37,10 @@ public class TradeListener implements IQuantitativeListener {
             if(buyPolicy(wing.getKey())){
                 PlaceParam param = new PlaceParam();
                 param.setSymbol(wing.getKey());
-                //市价购买
-                param.setType(OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code);
-                param.setPrice(DataMarket.TICKERS.get(wing.getKey()).getClose());
-//                String amount = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet().get("usdt").getTradeBalance();
-                String amount = (6D / Double.valueOf(param.getPrice())) + "";
-//                String amount = "6";
-                param.setAmount(amount);
+                param.setType(buyTypePolicy());
+                String[] result = buyPricePolicy(param);
+                param.setPrice(result[0]);
+                param.setAmount(result[1]);
                 //如果成功,结果在数仓
                 order.place(param);
             }
@@ -52,18 +50,16 @@ public class TradeListener implements IQuantitativeListener {
     @Override
     public void sell() {
         IOrder order = BeanMap.getBean(Order.class);
-        //已持有货币
+        //所有订单
         Map<String, OrderDto> orders = DataMarket.ORDERS;
         for(Map.Entry<String,OrderDto> entry : orders.entrySet()){
             if(sellPolicy(entry.getValue())){
-                WalletDto wallet = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet().get(entry.getValue().getSymbol().replace("usdt",""));
                 PlaceParam param = new PlaceParam();
                 param.setSymbol(entry.getValue().getSymbol());
-                //限价卖出
-                param.setType(OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code);
-                param.setPrice(DataMarket.TICKERS.get(entry.getValue().getSymbol()).getClose());
-                //全部卖出
-                param.setAmount(wallet.getTradeBalance());
+                param.setType(sellTypePolicy(entry.getValue()));
+                String[] result = sellPricePolicy(param);
+                param.setPrice(result[0]);
+                param.setAmount(result[1]);
                 //如果成功,结果在数仓
                 order.place(param);
             }
@@ -75,13 +71,13 @@ public class TradeListener implements IQuantitativeListener {
      * @return
      */
     private boolean buyPolicy(String symbol){
-        RuleEngine re = RuleEngine.getIns();
+        RuleEngine re = new RuleEngine();
         RuleBuilder rb = new RuleBuilder();
         IQuantitative quantitative = BeanMap.getBean(Quantitative.class);
         try {
             List<RuleDTO> tree = rb
                     .root("flag","执行标记",quantitative.isAutoPlaceFlag(),"=","true")
-                    .and("isUsdt","是否usdt交易对",symbol.endsWith("usdt"),"=","true")
+                    .and("isUsdtSymbol","是否usdt交易对",symbol.endsWith("usdt"),"=","true")
                     .and("balance","余额",DataMarket.TRADE_BALANCE,">=","6")
                     .build();
             return re.start(tree).getResult();
@@ -97,7 +93,7 @@ public class TradeListener implements IQuantitativeListener {
      * @return
      */
     private boolean sellPolicy(OrderDto order){
-        RuleEngine re = RuleEngine.getIns();
+        RuleEngine re = new RuleEngine();
         RuleBuilder rb = new RuleBuilder();
         IQuantitative quantitative = BeanMap.getBean(Quantitative.class);
         try {
@@ -114,9 +110,8 @@ public class TradeListener implements IQuantitativeListener {
                     .root("flag","执行标记",quantitative.isOrderFlag(),"=",true)
                     .and("orderState","订单状态",order.getState(),"=",OrderEnum.ORDER_STATE_FILLED.code)
                     .and("isBuyOrder","是否买单",isBuyOrder,"=",true)
-                    .or("isBuyOrder","是否买单",isBuyOrder,"=",false)
-                    .and("upWings","涨幅",wings,">=",1F)
-                    .or("downWings","跌幅",wings,"<=",-0.5F)
+                    .and("upWings","涨幅",wings,">=",0.2F)
+                    .or("downWings","跌幅",wings,"<=",-3F)
                     .and("assets","价值",assets,">=",5)
                     .build();
             return re.start(tree).getResult();
@@ -125,5 +120,89 @@ public class TradeListener implements IQuantitativeListener {
             System.err.println("策略引擎构建失败!!!");
         }
         return false;
+    }
+
+    /**
+     * 买单类型策略
+     * @return
+     */
+    private String buyTypePolicy(){
+        RuleEngine re = new RuleEngine();
+        RuleBuilder rb = new RuleBuilder();
+        String orderType = OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code;
+        try {
+            List<RuleDTO> tree = rb
+                    .root("flag","执行标记",true,"=",true)
+                    .build();
+            ResultDTO result = re.start(tree);
+            if(result.getScore() >= 10 || result.getScore() <= -10){
+                orderType = OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_MARKET.code;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("策略引擎构建失败!!!");
+        }
+        return orderType;
+    }
+
+    /**
+     * 买单价格策略
+     * @param param
+     * @return
+     */
+    private String[] buyPricePolicy(PlaceParam param){
+        //第一位是price,第二位是amount
+        String[] paa = new String[2];
+        paa[0] = DataMarket.TICKERS.get(param.getSymbol()).getClose();
+        if(param.getType().contains(OrderEnum.ORDER_OPERATION_MARKET.code)){
+            paa[1] = "6";
+        }else{
+            paa[1] = (6D / Double.valueOf(paa[0])) + "";
+        }
+        //                String amount = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet().get("usdt").getTradeBalance();
+        return paa;
+    }
+
+    /**
+     * 买单价格策略
+     * @param param
+     * @return
+     */
+    private String[] sellPricePolicy(PlaceParam param){
+        //第一位是price,第二位是amount
+        String[] paa = new String[2];
+        WalletDto wallet = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet().get(param.getSymbol().replace("usdt",""));
+        paa[0] = DataMarket.TICKERS.get(param.getSymbol()).getClose();
+        paa[1] = wallet.getTradeBalance();
+        return paa;
+    }
+
+    /**
+     * 卖单类型策略
+     * @param order
+     * @return
+     */
+    private String sellTypePolicy(OrderDto order){
+        RuleEngine re = new RuleEngine();
+        RuleBuilder rb = new RuleBuilder();
+        String orderType = OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code;
+        try {
+            //(当前价-买入价)/买入价*100 为本订单涨跌幅
+            float currPrice = Float.valueOf(DataMarket.TICKERS.get(order.getSymbol()).getClose());
+            float buyPrice = Float.valueOf(DataMarket.BUY_PRICE.get(order.getSymbol()));
+            float wings = (currPrice - buyPrice) / currPrice * 100.0F;
+            List<RuleDTO> tree = rb
+                    .root("upWings","涨幅",wings,">",0.5F,10)
+                    .or("downWings","跌幅",wings,"<=",-5F,-10)
+                    .build();
+            ResultDTO result = re.start(tree);
+            if(result.getScore() >= 10 || result.getScore() <= -10){
+                orderType = OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_MARKET.code;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("策略引擎构建失败!!!");
+        }
+        return orderType;
     }
 }
