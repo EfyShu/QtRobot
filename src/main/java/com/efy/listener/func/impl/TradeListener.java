@@ -38,7 +38,7 @@ public class TradeListener implements IQuantitativeListener {
                 param.setSymbol(wing.getKey());
                 //市价购买
                 param.setType(OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code);
-                param.setPrice(DataMarket.TICKERS.get(wing.getKey()).getBid());
+                param.setPrice(DataMarket.TICKERS.get(wing.getKey()).getClose());
 //                String amount = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet().get("usdt").getTradeBalance();
                 String amount = (6D / Double.valueOf(param.getPrice())) + "";
 //                String amount = "6";
@@ -59,9 +59,9 @@ public class TradeListener implements IQuantitativeListener {
                 WalletDto wallet = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet().get(entry.getValue().getSymbol().replace("usdt",""));
                 PlaceParam param = new PlaceParam();
                 param.setSymbol(entry.getValue().getSymbol());
-                //市价卖出
+                //限价卖出
                 param.setType(OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code);
-                param.setPrice(DataMarket.TICKERS.get(entry.getValue().getSymbol()).getAsk());
+                param.setPrice(DataMarket.TICKERS.get(entry.getValue().getSymbol()).getClose());
                 //全部卖出
                 param.setAmount(wallet.getTradeBalance());
                 //如果成功,结果在数仓
@@ -101,11 +101,12 @@ public class TradeListener implements IQuantitativeListener {
         RuleBuilder rb = new RuleBuilder();
         IQuantitative quantitative = BeanMap.getBean(Quantitative.class);
         try {
-            //(买入价-当前价)/买入价*100 为本订单涨跌幅
+            //(当前价-买入价)/买入价*100 为本订单涨跌幅
             float currPrice = Float.valueOf(DataMarket.TICKERS.get(order.getSymbol()).getClose());
-            float buyPrice = Float.valueOf(order.getPrice());
-            float wings = (buyPrice - currPrice) / buyPrice * 100.0F;
+            float buyPrice = Float.valueOf(DataMarket.BUY_PRICE.get(order.getSymbol()));
+            float wings = (currPrice - buyPrice) / currPrice * 100.0F;
             WalletDto wallet = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet().get(order.getSymbol().replace("usdt",""));
+            if(wallet == null) return false;  //订单未真正交易完成,钱包不一定有余额
             double assets = Double.parseDouble(wallet.getTradeBalance()) *
                      Double.parseDouble(DataMarket.TICKERS.get(order.getSymbol()).getClose());
             boolean isBuyOrder = order.getType().startsWith(OrderEnum.ORDER_DIRECTION_BUY.code);
@@ -114,9 +115,9 @@ public class TradeListener implements IQuantitativeListener {
                     .and("orderState","订单状态",order.getState(),"=",OrderEnum.ORDER_STATE_FILLED.code)
                     .and("isBuyOrder","是否买单",isBuyOrder,"=",true)
                     .or("isBuyOrder","是否买单",isBuyOrder,"=",false)
-                    .and("upWings","涨幅",wings,">=",0.5F)
+                    .and("upWings","涨幅",wings,">=",1F)
+                    .or("downWings","跌幅",wings,"<=",-0.5F)
                     .and("assets","价值",assets,">=",5)
-//                    .or("downWings","跌幅",wings,"<=",-3F)
                     .build();
             return re.start(tree).getResult();
         } catch (Exception e) {

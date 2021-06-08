@@ -53,30 +53,26 @@ public class Quantitative implements IQuantitative {
                 System.out.println("开始监听钱包");
                 IAccount account = BeanMap.getBean(Account.class);
                 ISystemMenu systemMenu = BeanMap.getBean(SystemMenu.class);
+                int i=0;
                 while (this.balanceFlag){
                     account.balance(new BalanceParam());
                     account.asset(new AssetParam());
                     AccountDto spotAcc = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code);
                     double todayWings = (Double.valueOf(spotAcc.getValuation()) - DataMarket.BASE_ASSETS) / Double.valueOf(spotAcc.getValuation()) * 100D;
-//                    systemMenu.clearPanel();
-//                    System.out.println("账户估值:" + spotAcc.getValuation() + ",今日涨跌:" + NumberUtil.format(todayWings,2));
+                    if(i>=20){
+                        i=0;
+                        systemMenu.clearPanel();
+                        System.out.println("账户估值:" + spotAcc.getValuation() + ",今日涨跌:" + NumberUtil.format(todayWings,2));
+                    }
                     if(todayWings <= -5D){
                         this.orderFlag = false;
                         this.autoPlaceFlag = false;
                         this.balanceFlag = false;
                         System.err.println("今日跌幅已达最大,停止交易!!!");
                     }
-//                    for(Map.Entry<String,WalletDto> currency : spotAcc.getWallet().entrySet()){
-//                        Double totalBalance = Double.valueOf(currency.getValue().getTradeBalance())
-//                                + Double.valueOf(currency.getValue().getFrozenBalance());
-//                        if(totalBalance < 0.0001) continue;
-//                        WalletDto currencyallet = currency.getValue();
-//                        System.out.println(currency + ":" +
-//                                "tradeBalance=" + currencyallet.getTradeBalance() + " " +
-//                                "frozenBalance=" + currencyallet.getFrozenBalance());
-//                    }
                     //每秒更新一次
                     Thread.sleep(1000);
+                    i++;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -114,8 +110,6 @@ public class Quantitative implements IQuantitative {
                         param.setOrderId(entry.getKey());
                         order.query(param);
                     }
-
-                    doSell();
                     Thread.sleep(1000);
                     i++;
                 }
@@ -140,13 +134,14 @@ public class Quantitative implements IQuantitative {
                 IMarket market = BeanMap.getBean(Market.class);
                 while (this.autoPlaceFlag){
                     //每秒更新两次
-                    Thread.sleep(500);
+//                    Thread.sleep(500);
                     Result result = market.tickers(param);
                     if(!"ok".equals(result.getStatus())) continue;
 //                    printWings();
                     doBuy();
+                    doSell();
                 }
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             } finally {
                 this.autoPlaceFlag = false;
@@ -160,18 +155,18 @@ public class Quantitative implements IQuantitative {
      * 买入操作
      */
     private void doBuy(){
-        new Thread(() -> {
+//        new Thread(() -> {
             listener.buy();
-        }).start();
+//        }).start();
     }
 
     /**
      * 卖出操作
      */
     private void doSell(){
-        new Thread(() -> {
+//        new Thread(() -> {
             listener.sell();
-        }).start();
+//        }).start();
     }
 
     /**

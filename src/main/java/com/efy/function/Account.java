@@ -89,7 +89,9 @@ public class Account implements IAccount {
             if(!"0".equals(currencyDto.getBalance())){
                 //可交易的usdt数量
                 if(currencyDto.getCurrency().equals("usdt") && AccountEnum.CURRENCY_TYPE_TRADE.code.equals(currencyDto.getType())){
-                    DataMarket.TRADE_BALANCE = Double.parseDouble(currencyDto.getBalance());
+                    synchronized(DataMarket.TRADE_BALANCE){
+                        DataMarket.TRADE_BALANCE = Double.parseDouble(currencyDto.getBalance());
+                    }
                 }
                 //添加到账户钱包信息(已存在则更新,否则新增)
                 if(account.getWallet().get(currencyDto.getCurrency()) != null){

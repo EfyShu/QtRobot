@@ -23,8 +23,8 @@ public class RuleEngineDemo {
                 .and("assets","价值",5,">=",5)
                 .and("isBuyOrder","是否买单",true,"=",true)
                 .or("isBuyOrder","是否买单",true,"=",false)
-                .and("timeout","是否超时",5000,">=",5000)
-                .or("upWings","涨幅",0.3,">=",0.2F)
+                .and("upWings","涨幅",0.1,">=",0.2F)
+                .or("downWings","跌幅",1,"<=",-1F)
                 .and("assets","价值",5,">=",5)
                 .build();
         ResultDTO score = engine.start(tree);

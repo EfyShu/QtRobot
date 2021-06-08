@@ -68,7 +68,7 @@ public class Order implements IOrder {
 
     @Override
     @Module(value = "现货下单",tags = {"订单类"})
-    public synchronized Result<String> place(PlaceParam param){
+    public Result<String> place(PlaceParam param){
         //市价单不能填价格,但计算涨跌幅时需要
         String price = param.getPrice();
         if(param.getType().contains(OrderEnum.ORDER_OPERATION_MARKET.code)){
@@ -86,10 +86,19 @@ public class Order implements IOrder {
 
             //更新可交易余额
             DataMarket.ORDERS.put(result.getData(), dto);
-            DataMarket.TRADE_BALANCE -= Double.valueOf(param.getAmount());
-            String direDesc = param.getType().contains(OrderEnum.ORDER_DIRECTION_BUY.code) ? "买入" : "卖出";
-            System.out.println(direDesc+param.getSymbol()+"挂单成功.订单号:"+result.getData()+" 挂单价:"+price);
-            //买入成功时更新钱包信息
+            synchronized(DataMarket.TRADE_BALANCE){
+                DataMarket.TRADE_BALANCE -= Double.valueOf(param.getAmount());
+            }
+            String direDesc = "卖出";
+            //保存买入价
+            if(param.getType().startsWith(OrderEnum.ORDER_DIRECTION_BUY.code)){
+                direDesc = "买入";
+                DataMarket.BUY_PRICE.put(param.getSymbol(),price);
+                System.out.println(direDesc+param.getSymbol()+"挂单成功.订单号:"+result.getData()+" 挂单价:"+price);
+            }else{
+                System.out.println(direDesc+param.getSymbol()+"挂单成功.订单号:"+result.getData()+" 挂单价:"+price+" 买入价:"+DataMarket.BUY_PRICE.get(param.getSymbol()));
+            }
+            //挂单成功时更新钱包信息
             IAccount account = BeanMap.getBean(Account.class);
             account.balance(new BalanceParam());
         }else{
