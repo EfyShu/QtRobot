@@ -19,10 +19,12 @@ public class RuleEngineDemo {
         start = System.currentTimeMillis();
         RuleBuilder rb = new RuleBuilder();
         List<RuleDTO> tree = rb
-                .root("flag","执行标记",true,"=","true")
+                .root("flag","执行标记",true,"=",true)
                 .and("assets","价值",5,">=",5)
-                .and("upWings","涨幅",0.5,">=",0.1F)
-                .or("downWings","跌幅",0.5,"<=",0.2F)
+                .and("isBuyOrder","是否买单",true,"=",true)
+                .or("isBuyOrder","是否买单",true,"=",false)
+                .and("timeout","是否超时",5000,">=",5000)
+                .or("upWings","涨幅",0.3,">=",0.2F)
                 .and("assets","价值",5,">=",5)
                 .build();
         ResultDTO score = engine.start(tree);

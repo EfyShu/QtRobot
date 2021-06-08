@@ -59,8 +59,8 @@ public class RuleEngine {
                 return "()".equals(operator) == target.equals(source);
             }
         }else if((source instanceof String) || (source instanceof Boolean)){
-            return "=".equals(operator) ? source.toString().equals(target) :
-                   "!=".equals(operator) && !source.toString().equals(target);
+            return "=".equals(operator) ? source.toString().equals(target.toString()) :
+                   "!=".equals(operator) && !source.toString().equals(target.toString());
         }else{
             BigDecimal bSource = toNumber(source);
             BigDecimal bTarget = toNumber(target);
@@ -172,7 +172,7 @@ public class RuleEngine {
             return result;
         }
         for(RuleDTO temp : ruleTree){
-            if(!cardMode && !temp.getResult()) {
+            if((!cardMode && !temp.getResult() || temp.getFieldName().equals("#end#"))) {
                 continue;
             }
 

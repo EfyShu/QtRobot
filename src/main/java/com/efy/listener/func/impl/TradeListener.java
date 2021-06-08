@@ -37,10 +37,11 @@ public class TradeListener implements IQuantitativeListener {
                 PlaceParam param = new PlaceParam();
                 param.setSymbol(wing.getKey());
                 //市价购买
-                param.setType(OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_MARKET.code);
+                param.setType(OrderEnum.ORDER_DIRECTION_BUY.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code);
                 param.setPrice(DataMarket.TICKERS.get(wing.getKey()).getBid());
 //                String amount = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet().get("usdt").getTradeBalance();
-                String amount = "6";
+                String amount = (6D / Double.valueOf(param.getPrice())) + "";
+//                String amount = "6";
                 param.setAmount(amount);
                 //如果成功,结果在数仓
                 order.place(param);
@@ -59,7 +60,7 @@ public class TradeListener implements IQuantitativeListener {
                 PlaceParam param = new PlaceParam();
                 param.setSymbol(entry.getValue().getSymbol());
                 //市价卖出
-                param.setType(OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_MARKET.code);
+                param.setType(OrderEnum.ORDER_DIRECTION_SELL.code + "-" + OrderEnum.ORDER_OPERATION_LIMIT.code);
                 param.setPrice(DataMarket.TICKERS.get(entry.getValue().getSymbol()).getAsk());
                 //全部卖出
                 param.setAmount(wallet.getTradeBalance());
@@ -106,13 +107,16 @@ public class TradeListener implements IQuantitativeListener {
             float wings = (buyPrice - currPrice) / buyPrice * 100.0F;
             WalletDto wallet = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet().get(order.getSymbol().replace("usdt",""));
             double assets = Double.parseDouble(wallet.getTradeBalance()) *
-                    Double.parseDouble(DataMarket.TICKERS.get(order.getSymbol()).getClose());
+                     Double.parseDouble(DataMarket.TICKERS.get(order.getSymbol()).getClose());
+            boolean isBuyOrder = order.getType().startsWith(OrderEnum.ORDER_DIRECTION_BUY.code);
             List<RuleDTO> tree = rb
-                    .root("flag","执行标记",quantitative.isOrderFlag(),"=","true")
-                    .and("assets","价值",assets,">=",5)
+                    .root("flag","执行标记",quantitative.isOrderFlag(),"=",true)
+                    .and("orderState","订单状态",order.getState(),"=",OrderEnum.ORDER_STATE_FILLED.code)
+                    .and("isBuyOrder","是否买单",isBuyOrder,"=",true)
+                    .or("isBuyOrder","是否买单",isBuyOrder,"=",false)
                     .and("upWings","涨幅",wings,">=",0.5F)
+                    .and("assets","价值",assets,">=",5)
 //                    .or("downWings","跌幅",wings,"<=",-3F)
-//                    .and("assets","价值",5,">=",5)
                     .build();
             return re.start(tree).getResult();
         } catch (Exception e) {

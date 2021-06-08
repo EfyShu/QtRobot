@@ -50,15 +50,16 @@ public class Quantitative implements IQuantitative {
         if(!this.balanceFlag) return;
         new Thread(() -> {
             try {
+                System.out.println("开始监听钱包");
                 IAccount account = BeanMap.getBean(Account.class);
                 ISystemMenu systemMenu = BeanMap.getBean(SystemMenu.class);
                 while (this.balanceFlag){
-                    systemMenu.clearPanel();
                     account.balance(new BalanceParam());
                     account.asset(new AssetParam());
                     AccountDto spotAcc = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code);
                     double todayWings = (Double.valueOf(spotAcc.getValuation()) - DataMarket.BASE_ASSETS) / Double.valueOf(spotAcc.getValuation()) * 100D;
-                    System.out.println("账户估值:" + spotAcc.getValuation() + ",今日涨跌:" + NumberUtil.format(todayWings,2));
+//                    systemMenu.clearPanel();
+//                    System.out.println("账户估值:" + spotAcc.getValuation() + ",今日涨跌:" + NumberUtil.format(todayWings,2));
                     if(todayWings <= -5D){
                         this.orderFlag = false;
                         this.autoPlaceFlag = false;
@@ -94,18 +95,29 @@ public class Quantitative implements IQuantitative {
         if(!this.orderFlag) return;
         new Thread(() -> {
             try {
+                System.out.println("开始监听订单");
                 IOrder order = BeanMap.getBean(Order.class);
+                int i = 0;
                 while (this.orderFlag){
+                    if(i>=5){
+                        order.cancelAll(new CancelAllParam());
+                        i=0;
+                    }
                     //每秒更新一次
                     for(Map.Entry<String, OrderDto> entry : DataMarket.ORDERS.entrySet()){
-                        //已成交的订单不再查询
-                        if(OrderEnum.ORDER_STATE_FILLED.code.equals(DataMarket.ORDERS.get(entry.getKey()).getState())) continue;
+                        //已成交/取消的订单不再查询
+                        if(OrderEnum.ORDER_STATE_FILLED.code.equals(DataMarket.ORDERS.get(entry.getKey()).getState())
+                        || OrderEnum.ORDER_STATE_CANCELED.code.equals(DataMarket.ORDERS.get(entry.getKey()).getState())){
+                            continue;
+                        }
                         QueryParam param = new QueryParam();
                         param.setOrderId(entry.getKey());
                         order.query(param);
                     }
+
                     doSell();
                     Thread.sleep(1000);
+                    i++;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -148,8 +160,6 @@ public class Quantitative implements IQuantitative {
      * 买入操作
      */
     private void doBuy(){
-        //两次以上才开始交易
-        if(DataMarket.WINGS.size() < 2) return;
         new Thread(() -> {
             listener.buy();
         }).start();
@@ -159,8 +169,6 @@ public class Quantitative implements IQuantitative {
      * 卖出操作
      */
     private void doSell(){
-        //两次以上才开始交易
-        if(DataMarket.WINGS.size() < 2) return;
         new Thread(() -> {
             listener.sell();
         }).start();
@@ -173,8 +181,7 @@ public class Quantitative implements IQuantitative {
         IOrder order = BeanMap.getBean(Order.class);
         IAccount account = BeanMap.getBean(Account.class);
         //取消所有订单
-        CancelAllParam batchCancelParam = new CancelAllParam();
-        order.cancelAll(batchCancelParam);
+        order.cancelAll(new CancelAllParam());
         //卖出现有货币转为USDT
         account.balance(new BalanceParam());
         Map<String,WalletDto> wallets = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getWallet();
@@ -192,7 +199,9 @@ public class Quantitative implements IQuantitative {
             order.place(placeParam);
         }
         account.asset(new AssetParam());
-        System.out.println("转换完成,估值:" + DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code).getValuation());
+        AccountDto spotAcc = DataMarket.ACCOUNTS.get(AccountEnum.ACCOUNT_TYPE_SPOT.code);
+        double todayWings = (Double.valueOf(spotAcc.getValuation()) - DataMarket.BASE_ASSETS) / Double.valueOf(spotAcc.getValuation()) * 100D;
+        System.out.println("转换完成,估值:" + spotAcc.getValuation() + ",今日收益:" + NumberUtil.format(todayWings,2));
     }
 
     private void printWings(){

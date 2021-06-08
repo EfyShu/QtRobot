@@ -157,7 +157,8 @@ public class RuleBuilder {
         return rule;
     }
 
-    public List<RuleDTO> build(){
+    public List<RuleDTO> build() throws Exception {
+        this.and("#end#","结束",true,"=",true);
         return this.rules;
     }
 }
